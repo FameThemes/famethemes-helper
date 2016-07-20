@@ -27,8 +27,75 @@ class FameThemes_Helper {
 
         // check themes update
         add_filter('site_transient_update_themes', array( $this, 'check_theme_for_update' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) );
 
+        add_action( 'init', array( $this, 'init' ) );
+
+        add_action( 'wp_ajax_fame_helper_api', array( $this, 'ajax' ) );
     }
+
+    function ajax(){
+
+        $do = isset( $_REQUEST['fame_helper'] ) ? $_REQUEST['fame_helper'] : '';
+        if ( $do == 'enable_auto_update' ) {
+            $nonce = $_REQUEST['nonce'];
+            if ( ! wp_verify_nonce( $nonce , 'fame-helper' ) ) {
+                die( 'security_check' );
+            }
+            $id = $_REQUEST['id'];
+            $r = $this->enable_auto_update( $id );
+            if ( is_array( $r ) && $r['success'] ) {
+                $activated_items = get_option( 'fam_api_activated_items' );
+                if ( ! is_array( $activated_items ) ) {
+                    $activated_items = array();
+                }
+                $activated_items[ $id ] = $r;
+                update_option( 'fam_api_activated_items', $activated_items );
+                wp_send_json( $r );
+            } else {
+                wp_send_json_error();
+            }
+        } else if ( $do == 'disable_auto_update' ) {
+
+        }
+
+
+        die();
+    }
+
+    function enable_auto_update( $license_id ) {
+        $r = $this->api_request( 'enable_auto_update', array(
+            'license_id' => $license_id,
+        ) );
+
+        return $r;
+    }
+
+    function init(){
+        if ( is_admin() ) {
+            if (isset($_REQUEST['page']) && $_REQUEST['page'] == 'famethemes-helper') {
+                if ( isset( $_REQUEST['secret_key'] ) ) {
+                    $this->update_secret_key( $_REQUEST['secret_key'] );
+                    $redirect =  add_query_arg( array( 'page' => 'famethemes-helper' ), admin_url( 'admin.php' ) );
+                    wp_redirect( $redirect );
+                    die();
+                }
+            }
+        }
+    }
+
+    function load_scripts( $hook ) {
+        if ( $hook == 'dashboard_page_famethemes-helper' ) {
+            $url = trailingslashit( plugins_url('/', __FILE__) );
+            wp_enqueue_script( 'famethemes-helper', $url . 'js/helper.js', array( 'jquery' ), false, true );
+            wp_localize_script( 'famethemes-helper', 'FtHelper', array(
+                'nonce' => wp_create_nonce( 'fame-helper' ),
+                'ajax'  => admin_url( 'admin-ajax.php' ),
+            ) );
+        }
+    }
+
+
     function menu(){
         add_dashboard_page( 'Fame helper', 'Fame helper', 'manage_options', 'famethemes-helper',  array( $this, 'display' ) );
     }
@@ -47,35 +114,36 @@ class FameThemes_Helper {
         }
     }
 
-    function enable_auto_update( $license_id ){
-
-    }
-
     function update_secret_key( $key ){
         update_option( 'fame_api_secret_key', $key );
     }
 
 
-    function check_api_key(){
-        $key = get_option( 'fame_api_secret_key' );
-        if ( ! $key ) {
-            return false;
-        }
-        $r =  $this->api_request( 'check_api_key', array(
-            'api_key' => $key
-        ) );
+    function check_api_key( ){
 
-        if ( !$r ) {
+        $r = $this->api_request( 'check_api_key' );
+
+        if ( ! $r ) {
             return false;
         } else if ( $r['success'] ) {
             update_option( 'fame_api_connect_info', $r['data'] );
             return true;
         }
+
         return false;
+    }
+
+    function disconnect(){
+        $r = $this->api_request( 'unauthorize' );
+        delete_option( 'fame_api_secret_key' );
     }
 
     function display(){
         $date_format = get_option( 'date_format' );
+
+        if ( isset( $_REQUEST['disconnect'] ) && $_REQUEST['disconnect'] == 1 ) {
+            $this->disconnect();
+        }
 
         $url = add_query_arg( array(
                 'fame_api_action' => 'authorize',
@@ -83,11 +151,6 @@ class FameThemes_Helper {
             ),
             $this->api_end_point
         );
-
-
-        if ( isset( $_REQUEST['secret_key'] ) && $_REQUEST['secret_key'] != '' ) {
-            $this->update_secret_key(  $_REQUEST['secret_key'] );
-        }
 
         if ( isset( $_REQUEST['auto_update_id'] ) && $_REQUEST['auto_update_id'] != '' ) {
 
@@ -103,6 +166,12 @@ class FameThemes_Helper {
                 <a class="button-primary" href="<?php echo esc_url( $url );  ?>"><?php esc_html_e( 'Connect', 'ft-helper' ); ?></a>
             <?php
             } else {
+
+                $activated_items = get_option( 'fam_api_activated_items' );
+                if ( ! is_array( $activated_items ) ) {
+                    $activated_items = array();
+                }
+
                 ?>
                 <h1><?php esc_html_e( 'FameThemes Licenses', 'ft-helper' ); ?></h1>
 
@@ -110,12 +179,13 @@ class FameThemes_Helper {
                     <thead>
                         <tr>
                             <th class="column-primary">License</th>
+                            <th style="width: 120px;">Auto Update</th>
                             <th style="width: 120px;">Expiration</th>
                             <th style="width: 100px; text-align: center;">Activations</th>
                         </tr>
                     </thead>
                     <tbody id="the-list">
-                        <?php foreach ( (array) $this->get_items() as $id => $item ){
+                        <?php foreach ( (array) $this->get_items( true ) as $id => $item ){
 
                             $is_installed = false;
                             if ( $item['files'] ) {
@@ -125,16 +195,19 @@ class FameThemes_Helper {
                                     }
                                 }
                             }
-                            
+
+                            $is_auto_update = isset( $activated_items[ $item['id'] ] );
+
                             if ( $is_installed ) {
                                 ?>
                                 <tr>
                                     <td class="column-primary has-row-actions">
                                         <?php echo esc_html($item['title']); ?>
                                         <div class="row-actions">
-                                            <span class="edit"><a title="<?php esc_html_e( 'Enable auto update', 'ft-helper' ); ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'famethemes-helper', 'auto_update' => $item['key'], 'auto_update_id' => $id ), admin_url('index.php') ) ); ?>">Enable auto update</a></span>
+                                            <span class="edit"><a class="enable-auto-update" title="<?php esc_html_e( 'Enable auto update', 'ft-helper' ); ?>" data-id="<?php echo esc_attr( $item['id'] ); ?>" href="#">Enable auto update</a></span>
                                         </div>
                                     </td>
+                                    <td><?php echo $is_auto_update ? '<span class="dashicons dashicons-yes"></span>' : '<span class="dashicons dashicons-no-alt"></span>' ?></td>
                                     <td><?php echo $item['expiration'] ? date_i18n($date_format, $item['expiration']) : esc_html__('Never', 'fame-helper'); ?></td>
                                     <td style="text-align: center;"><?php echo esc_html($item['site_count']) . '/' . $item['limit']; ?></td>
                                 </tr>
@@ -151,12 +224,8 @@ class FameThemes_Helper {
                         esc_html__( 'Your are connect as %1$s, %2$s | %3$s', 'ft-helper' ),
                         '<strong>'.$connect_info['display_name'].'</strong>',
                         '<a class="ft-change-account" href="'.esc_url( $url ).'">'.esc_html__( 'Change Account', 'ft-helper' ).'</a>',
-                        '<a class="ft-change-account" href="'.esc_url( add_query_arg( array(
-                            'fame_api_action' => 'unauthorize',
-                            'url' => base64_encode( home_url('') )
-                        ),
-                            $this->api_end_point
-                        ) ).'">'.esc_html__( 'Disconnect', 'ft-helper' ).'</a>'
+                        '<a class="ft-change-account" href="'. esc_url( add_query_arg( array( 'page' => 'famethemes-helper', 'disconnect' => 1 ), admin_url('index.php') ) )
+                          .'">'.esc_html__( 'Disconnect', 'ft-helper' ).'</a>'
 
                     ); ?></p>
                 <?php
@@ -169,6 +238,9 @@ class FameThemes_Helper {
 
     function api_request( $action = '', $data = array() ){
         $key = get_option( 'fame_api_secret_key' );
+        if ( ! $key ) {
+            return false;
+        }
         $params = array(
             'api_key' => $key,
             'fame_api_action' => $action,
@@ -196,12 +268,25 @@ class FameThemes_Helper {
     }
 
 
-    function get_items(){
+    function get_items( $force = false ){
+        $key = 'fame_api_get_items';
+        $items = false;
+        if ( ! $force ) {
+            $items = get_transient( $key );
+            if (false !== $items) {
+                return $items;
+            }
+        }
+
         $api_response = $this->api_request( 'get_items' );
         if ( is_array( $api_response ) && isset( $api_response['success'] ) && $api_response['success'] ) {
-            return $api_response['data']['items'];
+            $items = $api_response['data']['items'];
+            set_transient( $key, $items, 1 * HOUR_IN_SECONDS );
+        } else {
+            delete_transient( $key );
         }
-        return false;
+
+        return $items;
     }
 
     function get_item_slugs( $get_type = 'all' ){
@@ -263,7 +348,6 @@ class FameThemes_Helper {
                            $slugs[ $slug ] = $data;
                        }
                    }
-
                }
             }
         }
@@ -272,8 +356,8 @@ class FameThemes_Helper {
     }
 
     function check_theme_for_update($checked_data) {
-        $items = $this->get_item_slugs( 'theme' );
 
+        $items = $this->get_item_slugs( 'theme' );
         $response = $this->api_request( 'check_themes_update', array(
             'themes' => $items,
         ) );
@@ -288,8 +372,9 @@ class FameThemes_Helper {
 
 
     function check_for_plugin_update( $checked_data ) {
-        global $wp_version;
 
+        //global $pagenow;
+        //echo $pagenow; die();
         if( ! is_object( $checked_data ) ) {
             $checked_data = new stdClass;
         }
