@@ -15,13 +15,17 @@
 $plugin_slug = basename(dirname(__FILE__));
 
 class FameThemes_Helper {
+
     public $api_end_point = 'http://localhost/ft2020/';
+
     function __construct(){
         add_action('admin_menu', array( $this, 'menu') );
 
-        //add_filter('plugins_api', array( $this, 'plugin_api_call' ) , 10, 3);
-        //add_filter('pre_set_site_transient_update_plugins', array( $this, 'check_for_plugin_update' ) );
+        // check plugins update
+        add_filter('plugins_api', array( $this, 'plugin_api_call' ) , 35, 3);
+        add_filter('pre_set_site_transient_update_plugins', array( $this, 'check_for_plugin_update' ) );
 
+        // check themes update
         add_filter('site_transient_update_themes', array( $this, 'check_theme_for_update' ) );
 
     }
@@ -34,7 +38,6 @@ class FameThemes_Helper {
         if ( ! $item_slug ) {
             return false;
         }
-        //echo $theme_root.'/'.$item_slug;
         if ( is_dir( $theme_root.'/'.$item_slug ) ) {
             return 'theme';
         } else if ( is_dir( WP_PLUGIN_DIR .'/'. $item_slug  ) ) {
@@ -44,85 +47,157 @@ class FameThemes_Helper {
         }
     }
 
+    function enable_auto_update( $license_id ){
+
+    }
+
+    function update_secret_key( $key ){
+        update_option( 'fame_api_secret_key', $key );
+    }
+
+
+    function check_api_key(){
+        $key = get_option( 'fame_api_secret_key' );
+        if ( ! $key ) {
+            return false;
+        }
+        $r =  $this->api_request( 'check_api_key', array(
+            'api_key' => $key
+        ) );
+
+        if ( !$r ) {
+            return false;
+        } else if ( $r['success'] ) {
+            update_option( 'fame_api_connect_info', $r['data'] );
+            return true;
+        }
+        return false;
+    }
+
     function display(){
         $date_format = get_option( 'date_format' );
-        $api_end_point = 'http://localhost/ft2020/';
-        $url = $api_end_point.'?fame_api_action=authorize&url='.base64_encode( home_url('') );
+
+        $url = add_query_arg( array(
+                'fame_api_action' => 'authorize',
+                'url' => base64_encode( home_url('') )
+            ),
+            $this->api_end_point
+        );
+
+
+        if ( isset( $_REQUEST['secret_key'] ) && $_REQUEST['secret_key'] != '' ) {
+            $this->update_secret_key(  $_REQUEST['secret_key'] );
+        }
+
+        if ( isset( $_REQUEST['auto_update_id'] ) && $_REQUEST['auto_update_id'] != '' ) {
+
+        }
+
+        $check_api = $this->check_api_key();
 
         ?>
         <div class="wrap">
-            <h1>My FameThemes Licenses <a class="page-title-action" href="http://localhost/ft2020/wp-admin/post-new.php">Add New</a></h1>
-            <a href="<?php echo $url;  ?>">Connect</a>
-            <table class="wp-list-table widefat striped fixed posts">
-                <thead>
-                    <tr>
-                        <th class="column-primary">Name</th>
-                        <th style="width: 100px;">Status</th>
-                        <th style="width: 100px;">Version</th>
-                        <th style="width: 120px;">Expiration</th>
-                        <th style="width: 100px; text-align: center;">Activations</th>
+            <?php
+            if ( ! $check_api ) { ?>
+                <h1><?php esc_html_e( 'Connect to FameThemes', 'ft-helper' ); ?></h1>
+                <a class="button-primary" href="<?php echo esc_url( $url );  ?>"><?php esc_html_e( 'Connect', 'ft-helper' ); ?></a>
+            <?php
+            } else {
+                ?>
+                <h1><?php esc_html_e( 'FameThemes Licenses', 'ft-helper' ); ?></h1>
 
-                    </tr>
-                </thead>
-                <tbody id="the-list">
-                    <?php foreach ( (array) $this->get_items() as $k => $item ){
+                <table class="wp-list-table widefat striped fixed posts">
+                    <thead>
+                        <tr>
+                            <th class="column-primary">License</th>
+                            <th style="width: 120px;">Expiration</th>
+                            <th style="width: 100px; text-align: center;">Activations</th>
+                        </tr>
+                    </thead>
+                    <tbody id="the-list">
+                        <?php foreach ( (array) $this->get_items() as $id => $item ){
 
-                        $is_active = false;
-                        if ( $item['files'] ) {
-                            foreach ( $item['files'] as $item_slug => $file ) {
-                                if ( $this->is_installed( $item_slug ) ) {
-                                    $is_active = true;
+                            $is_installed = false;
+                            if ( $item['files'] ) {
+                                foreach ( $item['files'] as $item_slug => $file ) {
+                                    if ( ! $is_installed ) {
+                                        $is_installed = $this->is_installed( $item_slug );
+                                    }
                                 }
                             }
-                        }
+                            
+                            if ( $is_installed ) {
+                                ?>
+                                <tr>
+                                    <td class="column-primary has-row-actions">
+                                        <?php echo esc_html($item['title']); ?>
+                                        <div class="row-actions">
+                                            <span class="edit"><a title="<?php esc_html_e( 'Enable auto update', 'ft-helper' ); ?>" href="<?php echo esc_url( add_query_arg( array( 'page' => 'famethemes-helper', 'auto_update' => $item['key'], 'auto_update_id' => $id ), admin_url('index.php') ) ); ?>">Enable auto update</a></span>
+                                        </div>
+                                    </td>
+                                    <td><?php echo $item['expiration'] ? date_i18n($date_format, $item['expiration']) : esc_html__('Never', 'fame-helper'); ?></td>
+                                    <td style="text-align: center;"><?php echo esc_html($item['site_count']) . '/' . $item['limit']; ?></td>
+                                </tr>
+                                <?php
+                            }
+                        } ?>
+                    </tbody>
+                </table>
+                <?php
+                $connect_info = get_option( 'fame_api_connect_info' );
+                ?>
+                <p><?php
+                    printf(
+                        esc_html__( 'Your are connect as %1$s, %2$s | %3$s', 'ft-helper' ),
+                        '<strong>'.$connect_info['display_name'].'</strong>',
+                        '<a class="ft-change-account" href="'.esc_url( $url ).'">'.esc_html__( 'Change Account', 'ft-helper' ).'</a>',
+                        '<a class="ft-change-account" href="'.esc_url( add_query_arg( array(
+                            'fame_api_action' => 'unauthorize',
+                            'url' => base64_encode( home_url('') )
+                        ),
+                            $this->api_end_point
+                        ) ).'">'.esc_html__( 'Disconnect', 'ft-helper' ).'</a>'
 
-                        ?>
-                        <tr>
-                            <td class="column-primary has-row-actions">
-                                <?php echo esc_html($item['title']); ?>
-                                <div class="row-actions">
-                                    <span class="edit"><a title="Edit this item" href="#">Active</a></span>
-                                </div>
-                            </td>
-                            <td><?php echo $is_active ? 'installed' : ''; ?></td>
-                            <td><?php echo esc_html($item['version']); ?></td>
-                            <td><?php echo $item['expiration'] ? date_i18n($date_format, $item['expiration']) : esc_html__('Never', 'fame-helper'); ?></td>
-                            <td style="text-align: center;"><?php echo esc_html($item['site_count']) . '/' . $item['limit']; ?></td>
-                        </tr>
-                        <?php
+                    ); ?></p>
+                <?php
+            }
 
-                    } ?>
-                </tbody>
-            </table>
+            ?>
         </div>
         <?php
+    }
 
-        $themes =  wp_get_themes( array( 'errors' => false , 'allowed' => null ));
-        echo '<h3>Themes</h3>';
-        echo '<pre>';
-        var_dump( $themes );
-        echo '</pre>';
+    function api_request( $action = '', $data = array() ){
+        $key = get_option( 'fame_api_secret_key' );
+        $params = array(
+            'api_key' => $key,
+            'fame_api_action' => $action,
+            'site_url' => home_url('')
+        );
 
-        echo '<h3>Plugins</h3>';
+        global $wp_version;
 
-        $plugins =  get_plugins();
-        echo '<pre>';
-        var_dump( $plugins );
-        echo '</pre>';
+        $params = wp_parse_args( $params, $data );
 
+        $r =  wp_remote_post( $this->api_end_point, array(
+                'timeout' => 15,
+                'body' => $params,
+                'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo('url')
+            ) );
+
+        if ( ! is_wp_error( $r ) && 200 == wp_remote_retrieve_response_code( $r ) ) {
+            $api_response = @json_decode(wp_remote_retrieve_body($r), true);
+            if ( ! is_array( $api_response ) ) {
+                return false;
+            }
+            return $api_response;
+        }
+        return false;
     }
 
 
     function get_items(){
-        $key = 'b365045e25abf169a5be35859a3830dd';
-        $params = array(
-            'api_key' => $key,
-            'fame_api_action' => 'get_items',
-            'site_url' => home_url('')
-        );
-
-        $r =  wp_remote_post( $this->api_end_point, array( 'timeout' => 15, 'body' => $params ) );
-        $api_response = @json_decode( wp_remote_retrieve_body( $r ), true );
+        $api_response = $this->api_request( 'get_items' );
         if ( is_array( $api_response ) && isset( $api_response['success'] ) && $api_response['success'] ) {
             return $api_response['data']['items'];
         }
@@ -142,7 +217,6 @@ class FameThemes_Helper {
         if ( $plugins ) {
             $plugins = array_keys(get_plugins());
         }
-
 
         foreach ( $plugins as $p ) {
             $k = explode('/', $p);
@@ -198,136 +272,65 @@ class FameThemes_Helper {
     }
 
     function check_theme_for_update($checked_data) {
-
-        /*
-        $update_data = $this->check_for_update();
-        if ( $update_data ) {
-            $value->response[ $this->theme_slug ] = $update_data;
-        }
-        return $value;
-        */
-
-
-        global $wp_version, $theme_version, $theme_base, $api_url;
-
         $items = $this->get_item_slugs( 'theme' );
 
-        // Start checking for an update
-        $send_for_check = array(
-            'body' => array(
-                'fame_api_action' => 'check_themes_update',
-                'themes' => $items,
-                'api_key' => 'b365045e25abf169a5be35859a3830dd',
-                'site_url' => home_url('')
-            ),
-            'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo('url')
-        );
-
-        $r = wp_remote_post( $this->api_end_point , $send_for_check);
-        $response = null;
-        // Make sure the response was successful
-        if ( ! is_wp_error( $r ) && 200 == wp_remote_retrieve_response_code( $r ) ) {
-            $response = json_decode( wp_remote_retrieve_body( $r ), true );
-            //  var_dump( $response );
-            if ( is_array( $response ) && isset( $response['success'] ) && $response['success'] ) {
-                foreach ( (array) $response['data'] as $theme_base => $info ) {
-                    $checked_data->response[ $theme_base ] = $info;
-                }
+        $response = $this->api_request( 'check_themes_update', array(
+            'themes' => $items,
+        ) );
+        if ( is_array( $response ) && isset( $response['success'] ) && $response['success'] ) {
+            foreach ( (array) $response['data'] as $theme_base => $info ) {
+                $checked_data->response[ $theme_base ] = $info;
             }
         }
 
-
         return $checked_data;
     }
 
-    // Take over the Theme info screen on WP multisite
-    function my_theme_api_call($def, $action, $args) {
-        global $theme_base, $api_url, $theme_version, $api_url;
 
-        if ($args->slug != $theme_base)
-            return false;
+    function check_for_plugin_update( $checked_data ) {
+        global $wp_version;
 
-        // Get the current version
-        $args->version = $theme_version;
-        $request_string = prepare_request($action, $args);
-        $request = wp_remote_post($api_url, $request_string);
-        if (is_wp_error($request)) {
-            $res = new WP_Error('themes_api_failed', __('An Unexpected HTTP Error occurred during the API request.</p> <p><a href="?" onclick="document.location.reload(); return false;">Try again</a>'), $request->get_error_message());
-        } else {
-            $res = unserialize($request['body']);
-
-            if ($res === false)
-                $res = new WP_Error('themes_api_failed', __('An unknown error occurred'), $request['body']);
+        if( ! is_object( $checked_data ) ) {
+            $checked_data = new stdClass;
         }
 
-        return $res;
-    }
-
-
-    function check_for_plugin_update($checked_data) {
-        global $api_url, $plugin_slug, $wp_version;
-
-        //Comment out these two lines during testing.
-        if (empty($checked_data->checked))
-            return $checked_data;
-
-        $args = array(
-            'slug' => $plugin_slug,
-            'version' => $checked_data->checked[$plugin_slug .'/'. $plugin_slug .'.php'],
-        );
-        $request_string = array(
-            'body' => array(
-                'action' => 'basic_check',
-                'request' => serialize($args),
-                'api-key' => md5(get_bloginfo('url'))
-            ),
-            'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo('url')
-        );
-
-        // Start checking for an update
-        $raw_response = wp_remote_post($api_url, $request_string);
-
-        if (!is_wp_error($raw_response) && ($raw_response['response']['code'] == 200))
-            $response = unserialize($raw_response['body']);
-
-        if (is_object($response) && !empty($response)) // Feed the update data into WP updater
-            $checked_data->response[$plugin_slug .'/'. $plugin_slug .'.php'] = $response;
+        $items = $this->get_item_slugs( 'plugin' );
+        $response = $this->api_request( 'check_plugins_update', array(
+            'plugins' => $items,
+        ) );
+        if ( is_array( $response ) && isset( $response['success'] ) && $response['success'] ) {
+            foreach ( (array) $response['data'] as $plugin_slug => $info ) {
+                $info = (object) $info;
+                $checked_data->response[ $plugin_slug ] = $info;
+                $checked_data->checked[ $plugin_slug ] = $info->new_version;
+            }
+            $checked_data->last_checked = time();
+        }
 
         return $checked_data;
     }
 
-    function plugin_api_call($def, $action, $args) {
-        global $plugin_slug, $api_url, $wp_version;
+    function plugin_api_call($_data, $action, $args) {
+        if ( $action != 'plugin_information' ) {
+            return $_data;
+        }
 
-        if (isset($args->slug) && ($args->slug != $plugin_slug))
-            return false;
+        $plugin_slug = $args->slug;
+        $plugins = $this->get_item_slugs('plugin');
+        if ( ! isset( $plugins[ $plugin_slug ] ) ) {
+            return $_data;
+        }
 
         // Get the current version
         $plugin_info = get_site_transient('update_plugins');
         $current_version = $plugin_info->checked[$plugin_slug .'/'. $plugin_slug .'.php'];
         $args->version = $current_version;
 
-        $request_string = array(
-            'body' => array(
-                'action' => $action,
-                'request' => serialize($args),
-                'api-key' => md5(get_bloginfo('url'))
-            ),
-            'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo('url')
-        );
-
-        $request = wp_remote_post($api_url, $request_string);
-
-        if (is_wp_error($request)) {
-            $res = new WP_Error('plugins_api_failed', __('An Unexpected HTTP Error occurred during the API request.</p> <p><a href="?" onclick="document.location.reload(); return false;">Try again</a>'), $request->get_error_message());
-        } else {
-            $res = unserialize($request['body']);
-
-            if ($res === false)
-                $res = new WP_Error('plugins_api_failed', __('An unknown error occurred'), $request['body']);
+        if ( isset ( $plugin_info->response[ $plugin_slug .'/'. $plugin_slug .'.php' ] ) ) {
+            $_data = $plugin_info->response[ $plugin_slug .'/'. $plugin_slug .'.php' ];
         }
 
-        return $res;
+        return $_data;
     }
 
 }
