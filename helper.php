@@ -16,7 +16,7 @@ $plugin_slug = basename(dirname(__FILE__));
 
 class FameThemes_Helper {
 
-    public $api_end_point = 'http://localhost/ft2020/';
+    public $api_end_point = 'https://www.famethemes.com/';
 
     function __construct(){
         add_action('admin_menu', array( $this, 'menu') );
