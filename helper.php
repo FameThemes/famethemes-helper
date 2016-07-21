@@ -21,6 +21,8 @@ class FameThemes_Helper {
     function __construct(){
         add_action('admin_menu', array( $this, 'menu') );
 
+        $this->api_end_point = trailingslashit( $this->api_end_point );
+
         // check plugins update
         add_filter('plugins_api', array( $this, 'plugin_api_call' ) , 35, 3);
         add_filter('pre_set_site_transient_update_plugins', array( $this, 'check_for_plugin_update' ) );
@@ -52,17 +54,6 @@ class FameThemes_Helper {
         }
 
         if ( is_array( $r ) && $r['success'] ) {
-            $activated_items = get_option( 'fam_api_activated_items' );
-            if ( ! is_array( $activated_items ) ) {
-                $activated_items = array();
-            }
-            if ( $act == 'enable' ) {
-                $activated_items[ $id ] = $r;
-            } else {
-                unset( $activated_items[ $id ] );
-            }
-
-            update_option( 'fam_api_activated_items', $activated_items );
             wp_send_json( $r );
         } else {
             wp_send_json_error();
@@ -112,6 +103,7 @@ class FameThemes_Helper {
                 'ajax'  => admin_url( 'admin-ajax.php' ),
                 'enable'  => esc_html__( 'Enable auto update', 'ft-helper' ),
                 'disable'  => esc_html__( 'Disable auto update', 'ft-helper' ),
+                'loading'  => '<span class="spinner"></span>',
             ) );
         }
     }
@@ -157,7 +149,6 @@ class FameThemes_Helper {
     function disconnect(){
         $r = $this->api_request( 'unauthorize' );
         delete_option( 'fame_api_secret_key' );
-        delete_option( 'fam_api_activated_items' );
     }
 
     function display(){
@@ -180,17 +171,16 @@ class FameThemes_Helper {
             <?php
             if ( ! $check_api ) { ?>
                 <h1><?php esc_html_e( 'Connect to FameThemes', 'ft-helper' ); ?></h1>
+                <?php if ( get_option( 'fame_api_secret_key' ) ) {
+                    ?>
+                    <p class="api-error"><?php esc_html_e( 'Could not connect to server, please try again later.', 'ft-helper' ); ?></p>
+                    <?php
+                } ?>
                 <a class="button-primary" href="<?php echo esc_url( $url );  ?>"><?php esc_html_e( 'Connect', 'ft-helper' ); ?></a>
             <?php
             } else {
 
-                $activated_items = get_option( 'fam_api_activated_items' );
-                if ( ! is_array( $activated_items ) ) {
-                    $activated_items = array();
-                }
-
                 $now = current_time('gmt');
-
                 ?>
                 <h1><?php esc_html_e( 'FameThemes Licenses', 'ft-helper' ); ?></h1>
 
@@ -198,7 +188,6 @@ class FameThemes_Helper {
                     <thead>
                         <tr>
                             <th class="column-primary"><?php esc_html_e( 'License Name', 'ft-helper' ); ?></th>
-                            <th class=""><?php esc_html_e( 'test', 'ft-helper' ); ?></th>
                             <th class="n-auto-update" style="width: 120px;"><?php esc_html_e( 'Auto Update', 'ft-helper' ); ?></th>
                             <th style="width: 120px;"><?php esc_html_e( 'Expiration', 'ft-helper' ); ?></th>
                             <th style="width: 100px; text-align: center;"><?php esc_html_e( 'Activations', 'ft-helper' ); ?></th>
@@ -216,12 +205,15 @@ class FameThemes_Helper {
                                 }
                             }
 
-                            $is_auto_update = isset( $activated_items[ $item['id'] ] );
+                            //$is_auto_update = isset( $activated_items[ $item['id'] ] );
                             if ( $item['expiration'] !='' ) {
                                 $is_expired = $now >  $item['expiration'];
                             } else {
                                 $is_expired = false;
                             }
+
+                            $is_auto_update = $item['is_active'];
+
 
                             if ( $is_installed ) {
                                 $text = $is_auto_update ? esc_html__( 'Disable auto update', 'ft-helper' ) : esc_html__( 'Enable auto update', 'ft-helper' );
@@ -236,22 +228,14 @@ class FameThemes_Helper {
                                                 } else if ( $item['site_count'] >= $item['limit'] ) {
                                                     echo '<span>'.esc_html_e( 'Activations Limited', 'ft-helper' ).'</span>';
                                                 } else {
-
                                                     ?>
                                                     <a data-action="<?php echo $is_auto_update ? 'disable' : 'enable'; ?>" class="ft-auto-update-link" title="<?php echo esc_attr( $text ); ?>" data-id="<?php echo esc_attr( $item['id'] ); ?>" href="#"><?php echo esc_html( $text ); ?></a>
                                                 <?php } ?>
 
+                                                | <a target="_blank" href="<?php echo esc_url( add_query_arg( array( 'license_id' => $item['id'], 'action' => 'manage_licenses', 'payment_id' => $item['payment_id'] ), $this->api_end_point.'dashboard/purchase-history/' ) ) ?>"><?php esc_html_e( 'Manage Licenses', 'ft-helper' ); ?></a>
+
                                             </span>
                                         </div>
-                                    </td>
-                                    <td>
-
-                                        <textarea style="width: 100%"><?php
-                                        foreach ( (array ) $item['files'] as $filekey =>$file  ) {
-                                            echo "{$file['file_key']}| {$file['url']}\r\n\r\n";
-                                        }
-                                        ?></textarea>
-
                                     </td>
                                     <td class="n-auto-update"><?php echo $is_auto_update ? '<span class="dashicons dashicons-yes"></span>' : '<span class="dashicons dashicons-no-alt"></span>' ?></td>
                                     <td class="<?php echo $is_expired ? 'expired' : 'no-expired'; ?>"><?php echo $item['expiration'] ? date_i18n($date_format, $item['expiration']) : esc_html__('Never', 'ft-helper'); ?></td>

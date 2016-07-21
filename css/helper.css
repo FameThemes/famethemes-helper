@@ -17,3 +17,7 @@
 .fame-licenses .row-actions span {
     color: #555555;
 }
+.n-auto-update .spinner {
+    visibility: visible;
+    float: none;
+}

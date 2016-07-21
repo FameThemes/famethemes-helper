@@ -5,7 +5,10 @@ jQuery( document ).ready( function( $ ){
         e.preventDefault();
         var id = $( this).attr( 'data-id' ) || '';
         var link = $( this);
+        var tr = link.closest( 'tr' );
         var act = link.attr( 'data-action' ) || 'enable';
+        tr.find('.n-auto-update').html( FtHelper.loading );
+
         if ( id ) {
             $.ajax( {
                 url: FtHelper.ajax,
@@ -19,7 +22,7 @@ jQuery( document ).ready( function( $ ){
                 type: 'get',
                 cache: false,
                 success: function( r ){
-                    var tr = link.closest( 'tr' );
+
                     var a;
                     if ( act == 'enable' ) {
                         link.attr( 'data-action', 'disable' );
