@@ -386,11 +386,16 @@ class FameThemes_Helper {
     }
 
     function check_theme_for_update($checked_data) {
+        $key = 'fame_api_check_themes_updates';
+        $response =  get_transient( 'fame_api_check_themes_updates' );
+        if ( false !==  $response ) {
+            $items = $this->get_item_slugs( 'theme' );
+            $response = $this->api_request( 'check_themes_update', array(
+                'themes' => $items,
+            ) );
+            set_transient( $key, $response, 1 * 60* 60 ); // 1 hour
+        }
 
-        $items = $this->get_item_slugs( 'theme' );
-        $response = $this->api_request( 'check_themes_update', array(
-            'themes' => $items,
-        ) );
         if ( is_array( $response ) && isset( $response['success'] ) && $response['success'] ) {
             foreach ( (array) $response['data'] as $theme_base => $info ) {
                 $checked_data->response[ $theme_base ] = $info;
