@@ -1,0 +1,19 @@
+.n-auto-update {
+    text-align: center !important;
+}
+.n-auto-update .dashicons {
+    font-size: 30px;
+}
+.n-auto-update .dashicons.dashicons-no-alt {
+    color: #f5500c;
+}
+
+.n-auto-update .dashicons.dashicons-yes {
+    color: #479719;
+}
+.fame-licenses td.expired, .fame-licenses .expired{
+    color: #f5500c;
+}
+.fame-licenses .row-actions span {
+    color: #555555;
+}
