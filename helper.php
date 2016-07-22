@@ -386,6 +386,7 @@ class FameThemes_Helper {
     }
 
     function check_theme_for_update($checked_data) {
+       // global $pagenow;
         $key = 'fame_api_check_themes_updates';
         $response =  get_transient( 'fame_api_check_themes_updates' );
         if ( false !==  $response ) {
