@@ -110,7 +110,7 @@ class FameThemes_Helper {
 
 
     function menu(){
-        add_dashboard_page( 'Fame helper', 'Fame helper', 'manage_options', 'famethemes-helper',  array( $this, 'display' ) );
+        add_dashboard_page( 'FameThemes Helper', 'FameThemes Helper', 'manage_options', 'famethemes-helper',  array( $this, 'display' ) );
     }
 
     function is_installed( $item_slug ){
@@ -457,5 +457,3 @@ class FameThemes_Helper {
 if ( is_admin() ) {
     new FameThemes_Helper();
 }
-
-
