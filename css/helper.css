@@ -1,3 +1,25 @@
+.ft-helper-wrap .intro {
+   margin: 0px 20px;
+}
+
+.ft-helper-wrap h1 {
+    color: #32373c;
+    font-size: 2.8em;
+    font-weight: 400;
+    line-height: 1.2em;
+    margin: 32px 200px 0 0;
+    padding: 0;
+}
+.ft-helper-wrap .about-text {
+    font-size: 19px;
+    margin: 1em 200px 1em 0;
+    color: #555d66;
+}
+
+
+.fame-licenses {
+    margin-top: 20px;
+}
 .n-auto-update {
     text-align: center !important;
 }

@@ -167,22 +167,29 @@ class FameThemes_Helper {
         $check_api = $this->check_api_key();
 
         ?>
-        <div class="wrap">
+        <div class="wrap ft-helper-wrap">
+            <div class="intro">
+                <h1><?php esc_html_e( 'Welcome to FameThemes Helper', 'ft-helper' ); ?></h1>
+                <div class="about-text"><?php esc_html_e( 'This is your one-stop-spot for activating your licenses.', 'ft-helper' ); ?></div>
+            </div>
             <?php
             if ( ! $check_api ) { ?>
-                <h1><?php esc_html_e( 'Connect to FameThemes', 'ft-helper' ); ?></h1>
-                <?php if ( get_option( 'fame_api_secret_key' ) ) {
-                    ?>
-                    <p class="api-error"><?php esc_html_e( 'Could not connect to server, please try again later.', 'ft-helper' ); ?></p>
-                    <?php
-                } ?>
-                <a class="button-primary" href="<?php echo esc_url( $url );  ?>"><?php esc_html_e( 'Connect', 'ft-helper' ); ?></a>
+                <div class="intro">
+                    <?php if ( get_option( 'fame_api_secret_key' ) ) {
+                        ?>
+                        <p class="api-error"><?php esc_html_e( 'Could not connect to server, please try again later.', 'ft-helper' ); ?></p>
+                        <?php
+                    } ?>
+                    <a class="button-primary" href="<?php echo esc_url( $url );  ?>"><?php esc_html_e( 'Connect to FameThemes', 'ft-helper' ); ?></a>
+                </div>
             <?php
             } else {
 
                 $now = current_time('gmt');
                 ?>
-                <h1><?php esc_html_e( 'FameThemes Licenses', 'ft-helper' ); ?></h1>
+                <h2 class="nav-tab-wrapper">
+                    <span class="nav-tab nav-tab-active"><?php esc_html_e( 'Licenses', 'ft-helper' ); ?></span>
+                </h2>
 
                 <table class="fame-licenses wp-list-table widefat striped fixed posts">
                     <thead>
@@ -205,22 +212,18 @@ class FameThemes_Helper {
                                 }
                             }
 
-                            //$is_auto_update = isset( $activated_items[ $item['id'] ] );
                             if ( $item['expiration'] !='' ) {
                                 $is_expired = $now >  $item['expiration'];
                             } else {
                                 $is_expired = false;
                             }
-
                             $is_auto_update = $item['is_active'];
-
-
                             if ( $is_installed ) {
                                 $text = $is_auto_update ? esc_html__( 'Disable auto update', 'ft-helper' ) : esc_html__( 'Enable auto update', 'ft-helper' );
                                 ?>
                                 <tr>
                                     <td class="column-primary has-row-actions">
-                                        <?php echo esc_html($item['title']); ?>
+                                        <strong><?php echo esc_html($item['title']); ?></strong>
                                         <div class="row-actions">
                                             <span class="edit">
                                                 <?php if ( $is_expired ) {
@@ -231,9 +234,7 @@ class FameThemes_Helper {
                                                     ?>
                                                     <a data-action="<?php echo $is_auto_update ? 'disable' : 'enable'; ?>" class="ft-auto-update-link" title="<?php echo esc_attr( $text ); ?>" data-id="<?php echo esc_attr( $item['id'] ); ?>" href="#"><?php echo esc_html( $text ); ?></a>
                                                 <?php } ?>
-
                                                 | <a target="_blank" href="<?php echo esc_url( add_query_arg( array( 'license_id' => $item['id'], 'action' => 'manage_licenses', 'payment_id' => $item['payment_id'] ), $this->api_end_point.'dashboard/purchase-history/' ) ) ?>"><?php esc_html_e( 'Manage Licenses', 'ft-helper' ); ?></a>
-
                                             </span>
                                         </div>
                                     </td>
