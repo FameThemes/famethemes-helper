@@ -198,6 +198,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                 } else {
 
                     $now = current_time('gmt');
+                    $found = false;
                     ?>
                     <h2 class="nav-tab-wrapper">
                         <span class="nav-tab nav-tab-active"><?php esc_html_e('Licenses', 'ft-helper'); ?></span>
@@ -232,6 +233,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                             $is_auto_update = $item['is_active'];
                             if ($is_installed) {
                                 $text = $is_auto_update ? esc_html__('Disable auto update', 'ft-helper') : esc_html__('Enable auto update', 'ft-helper');
+                                $found = true;
                                 ?>
                                 <tr>
                                     <td class="column-primary has-row-actions">
@@ -258,8 +260,22 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                                 </tr>
                                 <?php
                             }
-                        } ?>
+                        }
+                        if ( ! $found ) {
+                        ?>
+                        <tr>
+                            <td colspan="4"><?php esc_html_e( 'No FameThemes products found.', 'ft-helper' ); ?></td>
+                        </tr>
+                        <?php } ?>
                         </tbody>
+                        <tfoot>
+                        <tr>
+                            <th class="column-primary"><?php esc_html_e('License Name', 'ft-helper'); ?></th>
+                            <th class="n-auto-update" ><?php esc_html_e('Auto Update', 'ft-helper'); ?></th>
+                            <th ><?php esc_html_e('Expiration', 'ft-helper'); ?></th>
+                            <th ><?php esc_html_e('Activations', 'ft-helper'); ?></th>
+                        </tr>
+                        </tfoot>
                     </table>
                     <?php
                     $connect_info = get_option('fame_api_connect_info');
