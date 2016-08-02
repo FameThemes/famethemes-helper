@@ -12,6 +12,10 @@
  * Domain Path:       /languages
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
     class FameThemes_Helper
@@ -499,6 +503,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
     if (is_admin()) {
         new FameThemes_Helper();
+        require_once dirname( __FILE__ ).'/github-updater.php';
     }
 
 }
