@@ -69,6 +69,14 @@ class GitHubPluginUpdater {
         // Get plugin & GitHub release information
         $this->initPluginData();
         $this->getRepoReleaseInfo();
+        if ( empty( $this->githubAPIResult ) ) {
+            return $transient;
+        }
+
+        if ( ! isset( $transient->checked[$this->slug] ) ) {
+            return $transient;
+        }
+
         // Check the versions if we need to do an update
         $ver = str_replace( 'v', '', $this->githubAPIResult->tag_name );
         $doUpdate = version_compare( $ver, $transient->checked[$this->slug] );
