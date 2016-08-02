@@ -199,6 +199,9 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
                     $now = current_time('gmt');
                     $found = false;
+
+                    $fame_items = $this->get_items(true);
+
                     ?>
                     <h2 class="nav-tab-wrapper">
                         <span class="nav-tab nav-tab-active"><?php esc_html_e('Licenses', 'ft-helper'); ?></span>
@@ -214,7 +217,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                         </tr>
                         </thead>
                         <tbody id="the-list">
-                        <?php foreach ((array)$this->get_items(true) as $id => $item) {
+                        <?php foreach ((array)$fame_items as $id => $item) {
 
                             $is_installed = false;
                             if ($item['files']) {
@@ -254,7 +257,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                                             </span>
                                         </div>
                                     </td>
-                                    <td class="n-auto-update"><?php echo $is_auto_update ? '<span class="dashicons dashicons-yes"></span>' : '<span class="dashicons dashicons-no-alt"></span>' ?></td>
+                                    <td class="n-auto-update"><?php echo ( ! $is_expired && $is_auto_update ) ? '<span class="dashicons dashicons-yes"></span>' : '<span class="dashicons dashicons-no-alt"></span>' ?></td>
                                     <td class="<?php echo $is_expired ? 'expired' : 'no-expired'; ?>"><?php echo $item['expiration'] ? date_i18n($date_format, $item['expiration']) : esc_html__('Never', 'ft-helper'); ?></td>
                                     <td style="text-align: center;" class="n-activations"><?php echo esc_html($item['site_count']) . '/' . $item['limit']; ?></td>
                                 </tr>
@@ -262,10 +265,10 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                             }
                         }
                         if ( ! $found ) {
-                        ?>
-                        <tr>
-                            <td colspan="4"><?php esc_html_e( 'No FameThemes products found.', 'ft-helper' ); ?></td>
-                        </tr>
+                            ?>
+                            <tr>
+                                <td colspan="4"><?php esc_html_e( 'No FameThemes products found.', 'ft-helper' ); ?></td>
+                            </tr>
                         <?php } ?>
                         </tbody>
                         <tfoot>
@@ -363,11 +366,8 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
             $plugin_keys = array();
 
             $plugins = get_plugins();
-            if ($plugins) {
-                $plugins = array_keys(get_plugins());
-            }
 
-            foreach ($plugins as $p) {
+            foreach ($plugins as $p => $p_data ) {
                 $k = explode('/', $p);
                 $k = $k[0];
                 $plugin_keys[$k] = $p;
@@ -402,13 +402,13 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                                     $data['slug'] = $plugin_keys[$slug];
                                 }
                                 if (isset ($plugins[$data['slug']])) {
-                                    $data['version'] = $plugins[$data['slug']]->get('Version');
+                                    $data['version'] = $plugins[$data['slug']]['Version'];
                                 }
 
                                 $slugs[$slug] = $data;
                             }
                         } else {
-                            if ($type) {
+                            if ( $type ) {
                                 $slugs[$slug] = $data;
                             }
                         }
@@ -419,17 +419,18 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
         }
 
-        function check_theme_for_update($checked_data)
+        function check_theme_for_update( $checked_data )
         {
             // global $pagenow;
             $key = 'fame_api_check_themes_updates';
-            $response = get_transient('fame_api_check_themes_updates');
-            if (false !== $response) {
+            if ( ! isset( $GLOBALS[ $key ] ) ) {
                 $items = $this->get_item_slugs('theme');
                 $response = $this->api_request('check_themes_update', array(
                     'themes' => $items,
                 ));
-                set_transient($key, $response, 1 * 60 * 60); // 1 hour
+                $GLOBALS[$key] = $response;
+            } else {
+                $response = $GLOBALS[$key];
             }
 
             if (is_array($response) && isset($response['success']) && $response['success']) {
@@ -477,13 +478,18 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
                 return $_data;
             }
 
+            $slug =  $plugins[$plugin_slug]['slug'];
+
             // Get the current version
             $plugin_info = get_site_transient('update_plugins');
-            $current_version = $plugin_info->checked[$plugin_slug . '/' . $plugin_slug . '.php'];
-            $args->version = $current_version;
 
-            if (isset ($plugin_info->response[$plugin_slug . '/' . $plugin_slug . '.php'])) {
-                $_data = $plugin_info->response[$plugin_slug . '/' . $plugin_slug . '.php'];
+            if ( isset( $plugin_info->checked[ $slug ] ) ){
+                $current_version = $plugin_info->checked[ $slug ];
+                $args->version = $current_version;
+            }
+
+            if ( isset ($plugin_info->response[ $slug ])) {
+                $_data = $plugin_info->response[ $slug ];
             }
 
             return $_data;
