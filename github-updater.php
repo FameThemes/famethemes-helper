@@ -16,7 +16,9 @@ class GitHubPluginUpdater {
     function __construct( $pluginFile, $gitHubUsername, $gitHubProjectName, $accessToken = '' ) {
         add_filter( "pre_set_site_transient_update_plugins", array( $this, "setTransitent" ) );
         add_filter( "plugins_api", array( $this, "setPluginInfo" ), 10, 3 );
-       // add_filter( "upgrader_post_install", array( $this, "postInstall" ), 10, 3 );
+        add_filter( "upgrader_post_install", array( $this, "postInstall" ), 10, 3 );
+
+        $this->slug = plugin_basename( $this->pluginFile );
 
         $this->pluginFile   = $pluginFile;
         $this->username     = $gitHubUsername;
@@ -26,7 +28,6 @@ class GitHubPluginUpdater {
 
     // Get information regarding our plugin from WordPress
     private function initPluginData() {
-        $this->slug = plugin_basename( $this->pluginFile );
         $this->pluginData = get_plugin_data( $this->pluginFile );
     }
 
@@ -39,8 +40,6 @@ class GitHubPluginUpdater {
 
         // Query the GitHub API
         $url = "https://api.github.com/repos/{$this->username}/{$this->repo}/releases";
-
-        echo $url;
 
         // We need the access token for private repos
         if ( ! empty( $this->accessToken ) ) {
@@ -66,7 +65,7 @@ class GitHubPluginUpdater {
         if ( empty( $transient->checked ) ) {
             return $transient;
         }
-
+        $this->slug = plugin_basename( $this->pluginFile );
         // Get plugin & GitHub release information
         $this->initPluginData();
         $this->getRepoReleaseInfo();
@@ -98,6 +97,7 @@ class GitHubPluginUpdater {
     // Push in plugin version information to display in the details lightbox
     public function setPluginInfo( $false, $action, $response ) {
         // Get plugin & GitHub release information
+        $this->slug = plugin_basename( $this->pluginFile );
         $this->initPluginData();
         $this->getRepoReleaseInfo();
 
@@ -110,6 +110,7 @@ class GitHubPluginUpdater {
         $response->last_updated = $this->githubAPIResult->published_at;
         $response->slug = $this->slug;
         $response->plugin_name  = $this->pluginData["Name"];
+        $response->name  = $this->pluginData["Name"];
         $response->version = $this->githubAPIResult->tag_name;
         $response->author = $this->pluginData["AuthorName"];
         $response->homepage = $this->pluginData["PluginURI"];
@@ -166,27 +167,22 @@ class GitHubPluginUpdater {
 
     // Perform additional actions to successfully install our plugin
     public function postInstall( $true, $hook_extra, $result ) {
-        if ( $result )
-        // Get plugin information
-        $this->initPluginData();
-        // Remember if our plugin was previously activated
-        $wasActivated = is_plugin_active( $this->slug );
+        if ( $result && strpos( $result['destination_name'], 'famethemes-helper' ) !== false ) {
+            // Since we are hosted in GitHub, our plugin folder would have a dirname of
+            // reponame-tagname change it to our original one:
+            global $wp_filesystem;
+            $this->slug = plugin_basename( $this->pluginFile );
+            $pluginFolder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname($this->slug);
+            $wp_filesystem->move($result['destination'], $pluginFolder);
+            $result['destination'] = $pluginFolder;
 
-        // Since we are hosted in GitHub, our plugin folder would have a dirname of
-        // reponame-tagname change it to our original one:
-        global $wp_filesystem;
-        $pluginFolder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $this->slug );
-        $wp_filesystem->move( $result['destination'], $pluginFolder );
-        $result['destination'] = $pluginFolder;
-
-        // Re-activate plugin if needed
-        if ( $wasActivated ) {
-            $activate = activate_plugin( $this->slug );
+            // Re-activate plugin if needed
+            activate_plugin( $this->slug );
         }
 
         return $result;
-
     }
 }
 
 $updater = new GitHubPluginUpdater( dirname(__FILE__).'/helper.php', 'FameThemes', "famethemes-helper" );
+
