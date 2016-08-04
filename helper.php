@@ -4,7 +4,7 @@
  * Plugin URI:        https://www.famethemes.com/
  * Description:       Keep your FameThemes themes & plugins always up to date.
  * Version:           1.0.2
- * Author:            famethemes, shrimp2t
+ * Author:            FameThemes
  * Author URI:        https://www.famethemes.com/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
