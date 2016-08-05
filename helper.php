@@ -368,6 +368,9 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
             $themes = wp_get_themes(array('errors' => false, 'allowed' => null));
             $plugin_keys = array();
+            if ( ! function_exists( 'get_plugins' ) ){
+                require_once ABSPATH.'wp-admin/includes/file.php';
+            }
 
             $plugins = get_plugins();
 
