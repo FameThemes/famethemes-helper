@@ -26,6 +26,7 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
         function __construct()
         {
             add_action('admin_menu', array($this, 'menu'));
+            add_action('network_admin_menu', array($this, 'menu'));
 
             $this->api_end_point = trailingslashit($this->api_end_point);
 
@@ -104,7 +105,8 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
 
         function load_scripts($hook)
         {
-            if ($hook == 'dashboard_page_famethemes-helper') {
+
+            if ($hook == 'dashboard_page_famethemes-helper' || $hook == 'index_page_famethemes-helper' ) {
                 $url = trailingslashit(plugins_url('/', __FILE__));
                 wp_enqueue_script('famethemes-helper', $url . 'js/helper.js', array('jquery'), false, true);
                 wp_enqueue_style('famethemes-helper', $url . 'css/helper.css');
@@ -439,8 +441,8 @@ if ( ! class_exists( 'FameThemes_Helper' ) ) {
             } else {
                 $response = $GLOBALS[$key];
             }
-
-            if (is_array($response) && isset($response['success']) && $response['success']) {
+            
+            if ( is_array( $response ) && isset( $response['success'] ) && $response['success']) {
                 foreach ((array)$response['data'] as $theme_base => $info) {
                     $checked_data->response[$theme_base] = $info;
                 }
