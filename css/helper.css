@@ -1,5 +1,4 @@
-.ft-helper-wrap .intro {
-}
+.ft-helper-wrap .intro {}
 
 .ft-helper-wrap h1 {
     color: #32373c;
@@ -9,6 +8,7 @@
     margin: 32px 200px 0 0;
     padding: 0;
 }
+
 .ft-helper-wrap .about-text {
     font-size: 19px;
     margin: 1em 200px 1em 0;
@@ -19,26 +19,91 @@
 .fame-licenses {
     margin-top: 20px;
 }
-.n-auto-update {
-    text-align: center !important;
-}
-.n-auto-update .dashicons {
-    font-size: 30px;
-}
-.n-auto-update .dashicons.dashicons-no-alt {
+
+
+
+
+
+.fame-licenses td.expired,
+.fame-licenses .expired {
     color: #f5500c;
 }
 
-.n-auto-update .dashicons.dashicons-yes {
-    color: #479719;
-}
-.fame-licenses td.expired, .fame-licenses .expired{
-    color: #f5500c;
-}
 .fame-licenses .row-actions span {
     color: #555555;
 }
+
 .n-auto-update .spinner {
     visibility: visible;
     float: none;
+}
+
+#fame-licenses-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.license-item h3 {
+    margin-top: 0px;
+}
+
+.license-item {
+    flex-basis: 300px;
+    background: #fff;
+    padding: 1.5em;
+    border-radius: 0.5em;
+    box-shadow: 0 0 0.3125rem rgba(23, 24, 24, 0.05), 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+.license-item.not-installed {
+    background: #f6f6f6;
+    opacity: 0.8;
+}
+
+.license-item>div {
+    z-index: 1;
+}
+
+.license-item .spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    float: none;
+    visibility: visible;
+    position: absolute;
+    top: 1em;
+    right: 1em;
+}
+
+.license-item-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.license-item-name span {
+    border: 1px solid #ccc;
+    font-size: 10px;
+    line-height: 10px;
+    font-weight: bold;
+    padding: 3px 3px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    color: #666;
+}
+
+.installed .license-item-name span.i-status {
+    background: #0fba70;
+    color: #fff;
+    border-color: #0fba70;
+}
+
+.list-heading {
+    flex-basis: 100%;
+    color: #1d2327;
+    font-size: 1.3em;
+    margin: .5em 0;
 }

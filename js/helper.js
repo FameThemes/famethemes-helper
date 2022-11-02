@@ -1,16 +1,21 @@
 
 
-jQuery( document ).ready( function( $ ){
-    $( '.ft-auto-update-link').on( 'click', function( e ) {
+jQuery(document).ready(function ($) {
+    $('.ft-auto-update-link').on('click', function (e) {
         e.preventDefault();
-        var id = $( this).attr( 'data-id' ) || '';
-        var link = $( this);
-        var tr = link.closest( 'tr' );
-        var act = link.attr( 'data-action' ) || 'enable';
-        tr.find('.n-auto-update').html( FtHelper.loading );
+        var id = $(this).attr('data-id') || '';
+        var link = $(this);
+        var tr = link.closest('.license-item');
+        var act = link.attr('data-action') || 'enable';
+        // tr.append(FtHelper.loading);
+        tr.addClass('loading');
+        
+        const loadingIcon =  $( FtHelper.loading );
+        tr.append(loadingIcon);
+        link.html(FtHelper.loadingText);
 
-        if ( id ) {
-            $.ajax( {
+        if (id) {
+            $.ajax({
                 url: FtHelper.ajax,
                 data: {
                     action: 'fame_helper_api',
@@ -21,36 +26,35 @@ jQuery( document ).ready( function( $ ){
                 dataType: 'json',
                 type: 'get',
                 cache: false,
-                success: function( r ){
-
+                success: function (r) {
+                    tr.removeClass('loading');
+                    loadingIcon.remove();
                     var a;
-                    if ( act == 'enable' ) {
-                        link.attr( 'data-action', 'disable' );
+                    if (act == 'enable') {
+                        link.attr('data-action', 'disable');
+                        tr.find('.n-auto-update').html(FtHelper.yes);
                         if (r.success) {
                             a = r.site_count + '/' + r.license_limit;
                             tr.find('.n-activations').html(a);
-                            tr.find('.n-auto-update').html('<span class="dashicons dashicons-yes"></span>');
-                            tr.find('.ft-auto-update-link').html(FtHelper.disable).attr('title', FtHelper.disable);
+                            link.html(FtHelper.disable);
                         } else {
-                            tr.find('.ft-auto-update-link').html(FtHelper.enable).attr('title', FtHelper.enable);
-                            tr.find('.n-auto-update').html('<span class="dashicons dashicons-no-alt"></span>');
+                            link.html(FtHelper.enable);
                         }
                     } else {
-                        link.attr( 'data-action', 'enable' );
+                        link.attr('data-action', 'enable');
+                        tr.find('.n-auto-update').html(FtHelper.no);
                         if (r.success) {
                             a = r.site_count + '/' + r.license_limit;
                             tr.find('.n-activations').html(a);
 
                         }
-
-                        tr.find('.n-auto-update').html('<span class="dashicons dashicons-no-alt"></span>');
-                        tr.find('.ft-auto-update-link').html(FtHelper.enable).attr('title', FtHelper.enable);
+                        link.html(FtHelper.enable);
                     }
 
 
                 }
-            } );
+            });
         }
 
-    } );
-} );
+    });
+});
