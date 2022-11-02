@@ -262,11 +262,12 @@ if (!class_exists('FameThemes_Helper')) {
                             ?>
                                 <div class="license-item <?php echo $is_installed ? 'installed' : 'not-installed'; ?>">
                                     <h3 class="license-item-name"><?php echo esc_html($item['title']); ?>
-                                        <span class="i-status"><?php echo $is_installed ? __('Installed', 'ft-helper') : __('Not Installed', 'ft-helper'); ?></span>
+                                        <!-- <span class="i-status"><?php echo $is_installed ? __('Installed', 'ft-helper') : __('Not Installed', 'ft-helper'); ?></span> -->
                                         <?php foreach ($item['terms'] as $t) { ?>
                                             <span class="i-term"><?php echo esc_html($t); ?></span>
                                         <?php } ?>
                                     </h3>
+                                    
 
                                     <div class="ft-manage-licenses">
                                         <a target="_blank" href="<?php echo esc_url(add_query_arg(array('license_id' => $item['id'], 'action' => 'manage_licenses', 'payment_id' => $item['payment_id']), $this->api_end_point . 'dashboard/purchase-history/')) ?>"><?php esc_html_e('Manage Licenses', 'ft-helper'); ?></a>
@@ -279,7 +280,7 @@ if (!class_exists('FameThemes_Helper')) {
                                     <?php } ?>
                                     
                                     <div class="<?php echo !$is_expired ? 'no-expired' : 'expired'; ?>"><?php printf(__('Expiration: %s', 'ft-helper'), $exp_text); ?></div>
-                                    <div class="ft-ctivations"><?php printf(__('Activations: <span class="n-activations">%s</span>', 'ft-helper'), $item['site_count'] . '/' . $item['limit']); ?></div>
+                                    <div class="ft-activations"><?php printf(__('Activations: <span class="n-activations">%s</span>', 'ft-helper'), $item['site_count'] . '/' . $item['limit']); ?></div>
                                 </div>
                             <?php
                                 $html = ob_get_contents();

@@ -95,7 +95,7 @@
     color: #666;
 }
 
-.installed .license-item-name span.i-status {
+.installed .license-item-name span {
     background: #0fba70;
     color: #fff;
     border-color: #0fba70;
