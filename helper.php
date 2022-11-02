@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Plugin Name:       FameThemes Helper
+ * Plugin Name:       FT Helper
  * Plugin URI:        https://www.famethemes.com/
  * Description:       Keep your FameThemes themes & plugins always up to date.
  * Version:           1.1.0
  * Author:            FameThemes
- * Author URI:        https://www.famethemes.com/
+ * Author URI:        https://www.famethemes.com/contact/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       ft-helper
@@ -47,7 +47,7 @@ if (!class_exists('FameThemes_Helper')) {
         function ajax()
         {
 
-            $act = isset($_REQUEST['fame_helper']) ? $_REQUEST['fame_helper'] : '';
+            $act = isset($_REQUEST['fame_helper']) ? sanitize_text_field($_REQUEST['fame_helper']) : '';
 
             $nonce = $_REQUEST['nonce'];
             if (!wp_verify_nonce($nonce, 'fame-helper')) {
@@ -267,48 +267,47 @@ if (!class_exists('FameThemes_Helper')) {
                                             <span class="i-term"><?php echo esc_html($t); ?></span>
                                         <?php } ?>
                                     </h3>
-                                    
+
 
                                     <div class="ft-manage-licenses">
                                         <a target="_blank" href="<?php echo esc_url(add_query_arg(array('license_id' => $item['id'], 'action' => 'manage_licenses', 'payment_id' => $item['payment_id']), $this->api_end_point . 'dashboard/purchase-history/')) ?>"><?php esc_html_e('Manage Licenses', 'ft-helper'); ?></a>
                                     </div>
-                                    <?php if ( $is_installed ) { ?>
-                                    <div class="ft-actions">
-                                        <?php printf(__('Auto update: <span class="n-auto-update">%s</span>', 'ft-helper'), (!$is_expired && $is_auto_update) ? 'Yes' : 'No'); ?>
-                                        (<a data-action="<?php echo $is_auto_update ? 'disable' : 'enable'; ?>" class="ft-auto-update-link" title="<?php echo esc_attr($text); ?>" data-id="<?php echo esc_attr($item['id']); ?>" href="#"><?php echo esc_html($text); ?></a>)
-                                    </div>
+                                    <?php if ($is_installed) { ?>
+                                        <div class="ft-actions">
+                                            <?php printf(__('Auto update: <span class="n-auto-update">%s</span>', 'ft-helper'), (!$is_expired && $is_auto_update) ? 'Yes' : 'No'); ?>
+                                            (<a data-action="<?php echo $is_auto_update ? 'disable' : 'enable'; ?>" class="ft-auto-update-link" title="<?php echo esc_attr($text); ?>" data-id="<?php echo esc_attr($item['id']); ?>" href="#"><?php echo esc_html($text); ?></a>)
+                                        </div>
                                     <?php } ?>
-                                    
+
                                     <div class="<?php echo !$is_expired ? 'no-expired' : 'expired'; ?>"><?php printf(__('Expiration: %s', 'ft-helper'), $exp_text); ?></div>
                                     <div class="ft-activations"><?php printf(__('Activations: <span class="n-activations">%s</span>', 'ft-helper'), $item['site_count'] . '/' . $item['limit']); ?></div>
                                 </div>
-                            <?php
+                                <?php
                                 $html = ob_get_contents();
                                 ob_end_clean();
-                                
-                                if ( $is_installed ) {
+
+                                if ($is_installed) {
                                     $installed_items[] = $html;
                                 } else {
                                     $not_installed_items[] = $html;
                                 }
-                                
                             }
 
-                            if ( ! empty( $installed_items ) ) {
-                                echo "<div class='list-heading'>".__( 'Installed', 'ft-helper' )."</div>";
+                            if (!empty($installed_items)) {
+                                echo "<div class='list-heading'>" . __('Installed', 'ft-helper') . "</div>";
                                 echo join(' ', $installed_items);
                             }
-                            
-                            
-                            if ( ! empty( $not_installed_items ) ) {
-                                echo "<div class='list-heading'>".__( 'Not Installed', 'ft-helper' )."</div>";
+
+
+                            if (!empty($not_installed_items)) {
+                                echo "<div class='list-heading'>" . __('Not Installed', 'ft-helper') . "</div>";
                                 echo join(' ', $not_installed_items);
                             }
-                            
+
 
 
                             if (!$found) {
-                            ?>
+                                ?>
                                 <div>
                                     <div><?php esc_html_e('No FameThemes products found.', 'ft-helper'); ?></div>
                                 </div>
@@ -460,7 +459,7 @@ if (!class_exists('FameThemes_Helper')) {
 
         function check_theme_for_update($checked_data)
         {
-            // global $pagenow;
+
             $key = 'fame_api_check_themes_updates';
             if (!isset($GLOBALS[$key])) {
                 $items = $this->get_item_slugs('theme');
@@ -537,6 +536,6 @@ if (!class_exists('FameThemes_Helper')) {
 
     if (is_admin()) {
         new FameThemes_Helper();
-        require_once dirname(__FILE__) . '/github-updater.php';
+        require_once dirname(__FILE__) . '/inc/github-updater.php';
     }
 }
