@@ -323,13 +323,23 @@ if (!class_exists('FameThemes_Helper')) {
 					?>
 					<p><?php
 						printf(
-							esc_html__('Your are connecting as %1$s, %2$s | %3$s', 'ft-helper'),
+							esc_html__('You are connecting as %1$s, %2$s | %3$s', 'ft-helper'),
 							'<strong>' . $connect_info['display_name'] . '</strong>',
 							'<a class="ft-change-account" href="' . esc_url($url) . '">' . esc_html__('Change Account', 'ft-helper') . '</a>',
 							'<a class="ft-change-account" href="' . esc_url(add_query_arg(array('page' => 'famethemes-helper', 'disconnect' => 1), admin_url('index.php')))
 								. '">' . esc_html__('Disconnect', 'ft-helper') . '</a>'
 
 						); ?></p>
+					<p><?php
+						$server_ip = get_transient( 'my_server_ip' );
+						if ( ! $server_ip ) {
+							$server_ip = wp_remote_retrieve_body(wp_remote_get('https://icanhazip.com'));
+							set_transient( 'my_server_ip', $server_ip,  HOUR_IN_SECONDS );
+						}
+						
+						printf(__('Your Server IP: %s', 'ft-helper'), $server_ip);
+
+						?></p>
 				<?php
 				}
 
