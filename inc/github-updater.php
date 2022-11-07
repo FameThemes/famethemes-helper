@@ -192,5 +192,5 @@ class GitHubPluginUpdater {
     }
 }
 
-$updater = new GitHubPluginUpdater( dirname(__FILE__).'/helper.php', 'FameThemes', "famethemes-helper" );
+$updater = new GitHubPluginUpdater( FAMETHEMES_FILE, 'FameThemes', "famethemes-helper" );
 
