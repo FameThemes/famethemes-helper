@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name:       FT Helper
+ * Plugin Name:       FameThemes Helper
  * Plugin URI:        https://www.famethemes.com/
  * Description:       Keep your FameThemes themes & plugins always up to date.
  * Version:           1.1.0

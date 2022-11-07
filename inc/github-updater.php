@@ -113,6 +113,8 @@ class GitHubPluginUpdater {
         if ( empty( $response->slug ) || $response->slug != $this->slug ) {
             return false;
         }
+        
+        var_dump(  $this->slug  );
 
         // Add our plugin information
         $response->last_updated = $this->githubAPIResult->published_at;

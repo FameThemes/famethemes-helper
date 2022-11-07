@@ -1,4 +1,4 @@
-=== FT Helper ===
+=== FameThemes Helper ===
 Contributors: famethemes
 Tags: helper, famethemes
 Requires at least: 4.6
