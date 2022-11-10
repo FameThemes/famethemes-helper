@@ -217,7 +217,6 @@ if (!class_exists('FameThemes_Helper')) {
 					$fame_items = $this->get_items(true);
 					$url = str_replace(['https://', 'http://'], '', home_url('/'));
 
-
 				?>
 					<h2 class="nav-tab-wrapper">
 						<span class="nav-tab nav-tab-active"><?php esc_html_e('Licenses', 'ft-helper'); ?></span>
@@ -331,12 +330,12 @@ if (!class_exists('FameThemes_Helper')) {
 
 						); ?></p>
 					<p><?php
-						$server_ip = get_transient( 'my_server_ip' );
-						if ( ! $server_ip ) {
+						$server_ip = get_transient('my_server_ip');
+						if (!$server_ip) {
 							$server_ip = wp_remote_retrieve_body(wp_remote_get('https://icanhazip.com'));
-							set_transient( 'my_server_ip', $server_ip,  HOUR_IN_SECONDS );
+							set_transient('my_server_ip', $server_ip,  HOUR_IN_SECONDS);
 						}
-						
+
 						printf(__('Your Server IP: %s', 'ft-helper'), $server_ip);
 
 						?></p>
@@ -367,7 +366,7 @@ if (!class_exists('FameThemes_Helper')) {
 			$r = wp_remote_post($this->api_end_point, array(
 				'timeout' => 15,
 				'body' => $params,
-				'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo('url')
+				'user-agent' => 'FT-Helper/WP-v' . $wp_version . '; ' . get_bloginfo('url')
 			));
 
 			if (!is_wp_error($r) && 200 == wp_remote_retrieve_response_code($r)) {
@@ -377,6 +376,7 @@ if (!class_exists('FameThemes_Helper')) {
 				}
 				return $api_response;
 			}
+
 			return false;
 		}
 
@@ -407,6 +407,7 @@ if (!class_exists('FameThemes_Helper')) {
 		function get_item_slugs($get_type = 'all')
 		{
 			$items = $this->get_items();
+
 			if (!is_array($items)) {
 				return false;
 			}
@@ -472,14 +473,17 @@ if (!class_exists('FameThemes_Helper')) {
 
 		function check_theme_for_update($checked_data)
 		{
-
+			
 			$key = 'fame_api_check_themes_updates';
+			$response = false;
 			if (!isset($GLOBALS[$key])) {
 				$items = $this->get_item_slugs('theme');
-				$response = $this->api_request('check_themes_update', array(
-					'themes' => $items,
-				));
-				$GLOBALS[$key] = $response;
+				if (!empty($items)) {
+					$response = $this->api_request('check_themes_update', array(
+						'themes' => $items,
+					));
+					$GLOBALS[$key] = $response;
+				}
 			} else {
 				$response = $GLOBALS[$key];
 			}

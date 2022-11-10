@@ -18,7 +18,7 @@ class GitHubPluginUpdater {
         add_filter( "plugins_api", array( $this, "setPluginInfo" ), 10, 3 );
         add_filter( "upgrader_post_install", array( $this, "postInstall" ), 10, 3 );
 
-        $this->slug = plugin_basename( $this->pluginFile );
+        $this->slug = plugin_basename( $pluginFile );
 
         $this->pluginFile   = $pluginFile;
         $this->username     = $gitHubUsername;
